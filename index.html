@@ -40,6 +40,7 @@
     import * as THREE from 'three'
     import {OrbitControls} from 'three/addons/controls/OrbitControls.js'
     import {Player} from '/js/Player'
+    import {Box} from '/js/Box'
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(
@@ -61,117 +62,9 @@
     const controls = new OrbitControls(camera, renderer.domElement)
     let framesSinceLastJump = 0
     const maxFramesForJump = 12
+    const moveSpeed = 0.04
 
     const player = new Player(scene)
-
-    class Box extends THREE.Mesh {
-        constructor({
-                        width,
-                        height,
-                        depth,
-                        color = '#00ff00',
-                        velocity = {
-                            x: 0,
-                            y: 0,
-                            z: 0
-                        },
-                        position = {
-                            x: 0,
-                            y: 0,
-                            z: 0
-                        },
-                        zAcceleration = false
-                    }) {
-            super(
-                new THREE.BoxGeometry(width, height, depth),
-                new THREE.MeshStandardMaterial({color})
-            )
-
-            this.width = width
-            this.height = height
-            this.depth = depth
-            this.canJump = false
-
-            this.position.set(position.x, position.y, position.z)
-
-            this.right = this.position.x + this.width / 2
-            this.left = this.position.x - this.width / 2
-
-            this.bottom = this.position.y - this.height / 2
-            this.top = this.position.y + this.height / 2
-
-            this.front = this.position.z + this.depth / 2
-            this.back = this.position.z - this.depth / 2
-
-            this.velocity = velocity
-            this.gravity = -0.002
-
-            this.zAcceleration = zAcceleration
-        }
-
-        updateSides() {
-            this.right = this.position.x + this.width / 2
-            this.left = this.position.x - this.width / 2
-
-            this.bottom = this.position.y - this.height / 2
-            this.top = this.position.y + this.height / 2
-
-            this.front = this.position.z + this.depth / 2
-            this.back = this.position.z - this.depth / 2
-        }
-
-        update(ground) {
-            this.updateSides()
-
-            if (this.zAcceleration) this.velocity.z += 0.0003
-
-            this.position.x += this.velocity.x
-            this.position.z += this.velocity.z
-
-            this.applyGravity(ground)
-        }
-
-        applyGravity(ground) {
-            this.velocity.y += this.gravity
-
-            // GROUND COLLISION
-            if (
-                boxCollision({
-                    box1: this,
-                    box2: ground
-                })
-            ) {
-                const friction = 0.5
-                this.velocity.y *= friction
-                this.velocity.y = -this.velocity.y
-                this.canJump = true
-            } else this.position.y += this.velocity.y
-        }
-    }
-
-    function boxCollision({box1, box2}) {
-        const xCollision = box1.right >= box2.left && box1.left <= box2.right
-        const yCollision =
-            box1.bottom + box1.velocity.y <= box2.top && box1.top >= box2.bottom
-        const zCollision = box1.front >= box2.back && box1.back <= box2.front
-
-        return xCollision && yCollision && zCollision
-    }
-
-
-    //CUBE
-    const cube = new Box({
-        width: 1,
-        height: 1,
-        depth: 1,
-        velocity: {
-            x: 0,
-            y: -0.01,
-            z: 0
-        }
-    })
-    cube.castShadow = true
-    scene.add(cube)
 
 
     //GROUND
@@ -200,9 +93,6 @@
     scene.add(new THREE.AmbientLight(0xffffff, 0.5))
 
     camera.position.z = 5
-    console.log(ground.top)
-    console.log(cube.bottom)
-
 
     //KEYS THAT ARE PRESSED
     const keys = {
@@ -235,11 +125,11 @@
                 keys.w.pressed = true
                 break
             case 'Space':
-                if (cube.canJump && framesSinceLastJump < maxFramesForJump) {
+                if (player.canJump && framesSinceLastJump < maxFramesForJump && player.isAlive) {
                     framesSinceLastJump++
-                    cube.velocity.y = 0.08
+                    player.velocity.y = 0.08
                 } else {
-                    cube.canJump = false
+                    player.canJump = false
                     framesSinceLastJump = 0
                 }
                 break
@@ -261,7 +151,7 @@
                 keys.w.pressed = false
                 break
             case 'Space':
-                cube.canJump = false
+                player.canJump = false
                 break
         }
     })
@@ -296,15 +186,13 @@
         // Reset game state (if needed)
         frames = 0;
         spawnRate = 200;
-        cube.position.set(0, 0, 0);
-        cube.velocity.x = 0;
-        cube.velocity.y = -0.01;
-        cube.velocity.z = 0;
+        player.reset()
         enemies.forEach((enemy) => scene.remove(enemy));
         enemies.length = 0;
     }
 
     function showGameOverScreen() {
+        gameRunning = false
         gameOverScreen.style.display = 'flex';
         scoreElement.textContent = frames;
     }
@@ -315,25 +203,31 @@
             renderer.render(scene, camera)
 
             // MOVEMENT
-            cube.velocity.x = 0
-            cube.velocity.z = 0
-            if (keys.a.pressed) cube.velocity.x = -0.05
-            else if (keys.d.pressed) cube.velocity.x = 0.05
+            player.velocity.x = 0
+            player.velocity.z = 0
 
-            if (keys.s.pressed) cube.velocity.z = 0.05
-            else if (keys.w.pressed) cube.velocity.z = -0.05
+            if (player.isAlive) {
+                if (keys.a.pressed) player.velocity.x = -moveSpeed
+                else if (keys.d.pressed) player.velocity.x = moveSpeed
 
-            cube.update(ground)
+                if (keys.s.pressed) player.velocity.z = moveSpeed
+                else if (keys.w.pressed) player.velocity.z = -moveSpeed
+            }
+
+            player.update(ground)
             enemies.forEach((enemy) => {
+                if (!player.isAlive) {
+                    enemy.velocity.z = 0
+                }
                 enemy.update(ground)
-                if (
-                    boxCollision({
-                        box1: cube,
-                        box2: enemy
-                    }) || cube.position.y < -5
-                ) {
-                    showGameOverScreen()
-                    cancelAnimationFrame(animationId)
+                if (player.collision(enemy) || player.position.y < -5 && player.isAlive) {
+                    player.die()
+                    setTimeout(() => {
+                        if (!player.isAlive) {
+                            showGameOverScreen()
+                            cancelAnimationFrame(animationId)
+                        }
+                    }, 1800)
                 }
             })
 
@@ -362,7 +256,6 @@
                 enemies.push(enemy)
             }
 
-            player.update()
             frames++
         }
     }
