@@ -96,6 +96,8 @@
     document.body.appendChild(renderer.domElement)
 
     const controls = new OrbitControls(camera, renderer.domElement)
+    let framesSinceLastJump = 0
+    const maxFramesForJump = 12
 
     class Box extends THREE.Mesh {
         constructor({
@@ -123,6 +125,7 @@
             this.width = width
             this.height = height
             this.depth = depth
+            this.canJump = false
 
             this.position.set(position.x, position.y, position.z)
 
@@ -176,6 +179,7 @@
                 const friction = 0.5
                 this.velocity.y *= friction
                 this.velocity.y = -this.velocity.y
+                this.canJump = true
             } else this.position.y += this.velocity.y
         }
     }
@@ -266,7 +270,13 @@
                 keys.w.pressed = true
                 break
             case 'Space':
-                cube.velocity.y = 0.08
+                if (cube.canJump && framesSinceLastJump < maxFramesForJump) {
+                    framesSinceLastJump++
+                    cube.velocity.y = 0.08
+                } else {
+                    cube.canJump = false
+                    framesSinceLastJump = 0
+                }
                 break
         }
     })
@@ -285,13 +295,15 @@
             case 'KeyW':
                 keys.w.pressed = false
                 break
+            case 'Space':
+                cube.canJump = false
+                break
         }
     })
 
     const enemies = []
-
-    let frames = 0
     let spawnRate = 200
+    let frames = 0
 
     let gameRunning = false;
 
