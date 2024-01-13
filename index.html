@@ -209,12 +209,12 @@
     scene.add(cube)
 
 
-    //GOURND
+    //GROUND
     const ground = new Box({
         width: 10,
         height: 0.5,
         depth: 50,
-        color: '#0369a1',
+        color: '#d0c725',
         position: {
             x: 0,
             y: -2,
@@ -365,7 +365,7 @@
                     boxCollision({
                         box1: cube,
                         box2: enemy
-                    })
+                    }) || cube.position.y < -5
                 ) {
                     showGameOverScreen()
                     cancelAnimationFrame(animationId)
