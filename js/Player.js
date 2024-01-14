@@ -108,7 +108,7 @@ export class Player {
         this.velocity.y += this.gravity
 
         if (this.collision(ground)) {
-            const friction = 0.5
+            const friction = 0
             this.velocity.y *= friction
             this.velocity.y = -this.velocity.y
             this.canJump = true

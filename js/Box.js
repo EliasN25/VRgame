@@ -74,7 +74,7 @@ export class Box extends THREE.Mesh {
         if (
             (this.collision(ground))
         ) {
-            const friction = 0.5
+            const friction = 0.1
             this.velocity.y *= friction
             this.velocity.y = -this.velocity.y
             this.canJump = true
