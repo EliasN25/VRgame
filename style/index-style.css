@@ -8,7 +8,7 @@ canvas {
     display: block;
 }
 
-#start-screen, #game-over-screen {
+#start-screen, #game-over-screen, #pause-screen {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -26,6 +26,10 @@ canvas {
 }
 
 #game-over-screen {
+    display: none;
+}
+
+#pause-screen {
     display: none;
 }
 

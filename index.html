@@ -22,6 +22,11 @@
     <button id="restart-button">Restart</button>
 </div>
 
+<div id="pause-screen">
+    <h1>Pause</h1>
+    <button id="resume-button">Resume</button>
+</div>
+
 <script
         async
         src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"
@@ -41,6 +46,8 @@
     import {OrbitControls} from 'three/addons/controls/OrbitControls.js'
     import {Player} from '/js/Player'
     import {Box} from '/js/Box'
+    import {Bot} from '/js/Bot'
+    import {Water} from '/js/Water.js'
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(
@@ -60,6 +67,7 @@
     document.body.appendChild(renderer.domElement)
 
     const controls = new OrbitControls(camera, renderer.domElement)
+    controls.enabled = false
     let framesSinceLastJump = 0
     const maxFramesForJump = 12
     const moveSpeed = 0.04
@@ -77,14 +85,13 @@
         width: 10,
         height: 0.5,
         depth: 50,
-        color: '#d0c725',
+        color: '#808080',
         position: {
             x: 0,
             y: -2,
             z: 0
         },
     })
-
     ground.receiveShadow = true
     scene.add(ground)
 
@@ -102,7 +109,7 @@
 
     //BACKGROUND
     const loader = new THREE.TextureLoader();
-    scene.background = loader.load('./img/background.jpg')
+    scene.background = loader.load('./img/comicBG.jpeg')
 
     //KEYS THAT ARE PRESSED
     const keys = {
@@ -117,7 +124,7 @@
         },
         w: {
             pressed: false
-        }
+        },
     }
 
     window.addEventListener('keydown', (event) => {
@@ -146,6 +153,9 @@
         }
     })
 
+    var mDragging = false;
+    var mDown = false;
+
     window.addEventListener('keyup', (event) => {
         switch (event.code) {
             case 'KeyA':
@@ -166,6 +176,14 @@
         }
     })
 
+
+    window.addEventListener('keydown', function(event) {
+    // Check if the Escape key is pressed
+    if (event.key === 'Escape') {
+        showPauseScreen();
+    }
+});
+
     const enemies = []
     let spawnRate = 200
     let frames = 0
@@ -176,6 +194,8 @@
     const startButton = document.getElementById('start-button');
     const gameOverScreen = document.getElementById('game-over-screen');
     const restartButton = document.getElementById('restart-button');
+    const pauseScreen = document.getElementById('pause-screen')
+    const resumeButton = document.getElementById('resume-button');
     const scoreElement = document.getElementById('score');
 
     startButton.addEventListener('click', () => {
@@ -192,6 +212,12 @@
         animate();
     });
 
+    resumeButton.addEventListener('click', () => {
+        pauseScreen.style.display = 'none';
+        gameRunning = true;
+        animate();
+    });
+
     function resetGame() {
         // Reset game state (if needed)
         frames = 0;
@@ -204,6 +230,12 @@
     function showGameOverScreen() {
         gameRunning = false
         gameOverScreen.style.display = 'flex';
+        scoreElement.textContent = frames;
+    }
+
+    function showPauseScreen() {
+        gameRunning = false
+        pauseScreen.style.display = 'flex';
         scoreElement.textContent = frames;
     }
 
@@ -249,7 +281,7 @@
                     height: 1,
                     depth: 1,
                     position: {
-                        x: (Math.random() - 0.5) * 10,
+                        x: (Math.random() - 0.5) * 9,
                         y: 0,
                         z: -20
                     },
@@ -258,7 +290,7 @@
                         y: 0,
                         z: 0.005
                     },
-                    color: 'red',
+                    color: '#b81414',
                     zAcceleration: true
                 })
                 enemy.castShadow = true
