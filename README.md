@@ -4,7 +4,7 @@
 
 * Clone the repository
 
-* ### Make sure you have node and npm installed
+* ### Make sure you have node installed
 
   * Run these two commands:
 
